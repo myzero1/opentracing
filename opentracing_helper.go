@@ -45,24 +45,9 @@ func (p opentracingPlugin) injectBefore(db *gorm.DB, op operationName) {
 		return
 	}
 
-	sp, _ := opentracing.StartSpanFromContextWithTracer(db.Statement.Context, p.opt.tracer, op.String())
-	db.InstanceSet(opentracingSpanKey, sp)
-}
-
-func (p opentracingPlugin) injectBeforeOld(db *gorm.DB, op operationName) {
-	// make sure context could be used
-	if db == nil {
-		return
-	}
-
-	if db.Statement == nil || db.Statement.Context == nil {
-		db.Logger.Error(context.TODO(), "could not inject sp from nil Statement.Context or nil Statement")
-		return
-	}
-
 	// use parentSpan,added by myzero1
 	{
-		val, ok := db.InstanceGet("parentSpanGormKey")
+		val, ok := db.InstanceGet(parentSpanGormKey)
 		if ok {
 			parentSpan := val.(opentracing.Span)
 			sp, _ := opentracing.StartSpanFromContextWithTracer(
@@ -85,7 +70,6 @@ func (p opentracingPlugin) extractAfter(db *gorm.DB) {
 	if db == nil {
 		return
 	}
-
 	if db.Statement == nil || db.Statement.Context == nil {
 		db.Logger.Error(context.TODO(), "could not extract sp from nil Statement.Context or nil Statement")
 		return
